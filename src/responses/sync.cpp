@@ -75,8 +75,12 @@ from_json(const json &obj, Ephemeral &ephemeral)
 void
 from_json(const json &obj, JoinedRoom &room)
 {
-        room.state    = obj.at("state").get<State>();
-        room.timeline = obj.at("timeline").get<Timeline>();
+        if (obj.count("state") != 0) {
+                room.state = obj.at("state").get<State>();
+        }
+        if (obj.count("timeline") != 0) {
+                room.timeline = obj.at("timeline").get<Timeline>();
+        }
 
         if (obj.find("unread_notifications") != obj.end())
                 room.unread_notifications =
@@ -89,8 +93,12 @@ from_json(const json &obj, JoinedRoom &room)
 void
 from_json(const json &obj, LeftRoom &room)
 {
-        room.state    = obj.at("state").get<State>();
-        room.timeline = obj.at("timeline").get<Timeline>();
+        if (obj.count("state") != 0) {
+                room.state = obj.at("state").get<State>();
+        }
+        if (obj.count("timeline") != 0) {
+                room.timeline = obj.at("timeline").get<Timeline>();
+        }
 }
 
 std::string
@@ -179,7 +187,9 @@ from_json(const json &obj, Rooms &rooms)
 void
 from_json(const json &obj, Sync &response)
 {
-        response.rooms      = obj.at("rooms").get<Rooms>();
+        if (obj.count("rooms") != 0) {
+                response.rooms = obj.at("rooms").get<Rooms>();
+        }
         response.next_batch = obj.at("next_batch").get<std::string>();
 }
 }
