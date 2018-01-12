@@ -121,7 +121,98 @@ TEST(Responses, State)
 }
 
 TEST(Responses, Timeline) {}
-TEST(Responses, JoinedRoom) {}
+TEST(Responses, JoinedRoom)
+{
+        json data1 = R"({
+            "ephemeral": {
+                "events": [
+                    {
+                        "content": {
+                            "$123456789123456789ABC:matrix.org": {
+                                "m.read": {
+                                    "@user1:s1.example.com": {
+                                        "ts": 1515754170039
+                                    },
+                                    "@user2:s2.example.com": {
+                                        "ts": 1515713767417
+                                    }
+                                }
+                            }
+                        },
+                        "type": "m.receipt"
+                    }
+                ]
+            },
+            "unread_notifications": {
+                "highlight_count": 2,
+                "notification_count": 4
+            }
+	})"_json;
+
+        ns::JoinedRoom room1 = data1;
+
+        // It this succeeds parsing was done successfully
+        EXPECT_EQ(room1.ephemeral.receipts.size(), 1);
+        EXPECT_EQ(room1.timeline.events.size(), 0);
+        EXPECT_EQ(room1.unread_notifications.highlight_count, 2);
+        EXPECT_EQ(room1.unread_notifications.notification_count, 4);
+
+        json data2 = R"({
+            "timeline": {
+                "events": [
+                    {
+                        "content": {
+                            "avatar_url": "mxc://matrix.org/MatrixContentID123456789",
+                            "displayname": "DisplayName",
+                            "membership": "join"
+                        },
+                        "event_id": "$1234567898765432123456:matrix.org",
+                        "membership": "join",
+                        "origin_server_ts": 1515756721018,
+                        "sender": "@user1:s1.example.com",
+                        "state_key": "@user1:s1.example.com",
+                        "type": "m.room.member",
+                        "unsigned": {
+                            "age": 18585,
+                            "prev_content": {
+                                "avatar_url": null,
+                                "displayname": "DisplayName",
+                                "membership": "join"
+                            },
+                            "prev_sender": "@user1:s1.example.com",
+                            "replaces_state": "$1234567898765432123455:matrix.org"
+                        }
+                    },
+                    {
+                        "content": {
+                            "body": "Hello World",
+                            "msgtype": "m.text"
+                        },
+                        "event_id": "$12345678987654321asdfg:matrix.org",
+                        "origin_server_ts": 1515756732500,
+                        "sender": "@user1:s1.example.com",
+                        "type": "m.room.message",
+                        "unsigned": {
+                            "age": 8032
+                        }
+                    }
+                ],
+                "limited": false,
+                "prev_batch": "s42_42_42_42_42_42_42_42_1"
+            },
+            "unread_notifications": {
+                "highlight_count": 2,
+                "notification_count": 4
+            }
+	})"_json;
+
+        ns::JoinedRoom room2 = data2;
+        EXPECT_EQ(room2.ephemeral.receipts.size(), 0);
+        EXPECT_EQ(room2.timeline.events.size(), 2);
+        EXPECT_EQ(room2.timeline.prev_batch, "s42_42_42_42_42_42_42_42_1");
+        EXPECT_EQ(room2.unread_notifications.highlight_count, 2);
+        EXPECT_EQ(room2.unread_notifications.notification_count, 4);
+}
 TEST(Responses, LeftRoom) {}
 
 TEST(Responses, InvitedRoom)
@@ -197,24 +288,37 @@ TEST(Responses, Sync)
 {
         std::ifstream file("./fixtures/responses/sync.json");
 
-        json data;
-        file >> data;
+        json data1;
+        file >> data1;
 
-        ns::Sync sync = data;
+        ns::Sync sync1 = data1;
 
-        EXPECT_EQ(sync.next_batch,
+        EXPECT_EQ(sync1.next_batch,
                   "s333358558_324502987_444424_65663508_21685260_193623_2377336_2940807_454");
-        EXPECT_EQ(sync.rooms.join.size(), 5);
+        EXPECT_EQ(sync1.rooms.join.size(), 5);
 
-        auto nheko = sync.rooms.join["!BPvgRcBVHzyFSlYkrg:matrix.org"];
+        auto nheko = sync1.rooms.join["!BPvgRcBVHzyFSlYkrg:matrix.org"];
         EXPECT_GT(nheko.state.events.size(), 0);
         EXPECT_GT(nheko.timeline.events.size(), 0);
         EXPECT_EQ(nheko.timeline.limited, true);
         EXPECT_EQ(nheko.timeline.prev_batch,
                   "t10853-333025362_324502987_444424_65663508_21685260_193623_2377336_2940807_454");
 
-        EXPECT_EQ(sync.rooms.leave.size(), 1);
-        EXPECT_EQ(sync.rooms.invite.size(), 0);
+        EXPECT_EQ(sync1.rooms.leave.size(), 1);
+        EXPECT_EQ(sync1.rooms.invite.size(), 0);
+
+        // Check consistency of incomplete sync
+        json data2 = R"({
+            "device_one_time_keys_count": {},
+            "next_batch": "s123_42_42_42_42_42_42_42_7"
+	})"_json;
+
+        ns::Sync sync2 = data2;
+
+        EXPECT_EQ(sync2.next_batch, "s123_42_42_42_42_42_42_42_7");
+        EXPECT_EQ(sync2.rooms.join.size(), 0);
+        EXPECT_EQ(sync2.rooms.leave.size(), 0);
+        EXPECT_EQ(sync2.rooms.invite.size(), 0);
 }
 
 TEST(Responses, Rooms) {}
