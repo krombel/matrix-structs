@@ -213,7 +213,44 @@ TEST(Responses, JoinedRoom)
         EXPECT_EQ(room2.unread_notifications.highlight_count, 2);
         EXPECT_EQ(room2.unread_notifications.notification_count, 4);
 }
-TEST(Responses, LeftRoom) {}
+TEST(Responses, LeftRoom)
+{
+        json data = R"({
+            "timeline": {
+                "events": [
+                    {
+                        "content": {
+                            "membership": "leave"
+                        },
+                        "event_id": "$12345678923456789:s1.example.com",
+                        "membership": "leave",
+                        "origin_server_ts": 1234567894342,
+                        "sender": "@u1:s1.example.com",
+                        "state_key": "@u1:s1.example.com",
+                        "type": "m.room.member",
+                        "unsigned": {
+                            "age": 1566,
+                            "prev_content": {
+                                "avatar_url": "mxc://msgs.tk/MatrixContentId123456789",
+                                "displayname": "User 1!",
+                                "membership": "join"
+                            },
+                            "prev_sender": "@u1:s1.example.com",
+                            "replaces_state": "$12345678912345678:s1.example.com"
+                        }
+                    }
+                ],
+                "limited": false,
+                "prev_batch": "s123_42_1234_4321123_13579_12_14400_4221_7"
+            }
+	})"_json;
+
+        ns::LeftRoom room = data;
+
+        EXPECT_EQ(room.timeline.events.size(), 1);
+        EXPECT_EQ(room.timeline.limited, false);
+        EXPECT_EQ(room.state.events.size(), 0);
+}
 
 TEST(Responses, InvitedRoom)
 {
